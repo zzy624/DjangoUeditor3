@@ -1,6 +1,9 @@
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 from importlib import import_module
 from django.http import HttpResponse
+
+from .qcloud_cos import CosConfig,CosS3Client
 from . import settings as USettings
 import os
 import json
@@ -31,17 +34,43 @@ def get_path_format_vars():
 # 保存上传的文件
 
 
-def save_upload_file(PostFile, FilePath):
-    try:
-        f = open(FilePath, 'wb')
-        for chunk in PostFile.chunks():
-            f.write(chunk)
-    except Exception as E:
-        f.close()
-        return u"写入文件错误: {}".format(E.message)
-    f.close()
-    return u"SUCCESS"
+# def save_upload_file(PostFile, FilePath):
+#     try:
+#         f = open(FilePath, 'wb')
+#         for chunk in PostFile.chunks():
+#             f.write(chunk)
+#     except Exception as E:
+#         f.close()
+#         return u"写入文件错误: {}".format(E.message)
+#     f.close()
+#     return u"SUCCESS"
 
+def save_upload_file(PostFile, FilePath):
+    SID = ""
+    SKEY = ""
+    Region = ""
+    try:
+        SID = os.environ['SID']
+        SKEY = os.environ['SKEY']
+        Region = os.environ['REGION']
+    except KeyError as e:
+        print(e)
+    config = CosConfig(Secret_id=SID,Secret_key=SKEY,Region=Region)
+    client = CosS3Client(config)
+
+    try :
+        with open(PostFile, 'rb') as fp:
+            response = client.put_object(
+                Bucket='tiny-1256181948',
+                Body=fp,
+                Key='media'+ FilePath,
+                StorageClass='STANDARD',
+                CacheControl='no-cache',
+            )
+    except Exception as e :
+        print(e)
+        return u"写入文件错误: {}".format(E.message)
+    return u"SUCCESS"
 
 @csrf_exempt
 def get_ueditor_settings(request):
@@ -238,9 +267,11 @@ def UploadFile(request):
                     file, os.path.join(OutputPath, OutputFile))
 
     # 返回数据
+    COS_BUCKET_DOMAIN = 'https://images.zhangzhiyuan.vip/media/'
     return_info = {
         # 保存后的文件名称
-        'url': urljoin(USettings.gSettings.MEDIA_URL, OutputPathFormat),
+        # 'url': urljoin(USettings.gSettings.MEDIA_URL, OutputPathFormat),
+        'url': urljoin(COS_BUCKET_DOMAIN, OutputPathFormat),
         'original': upload_file_name,  # 原始文件名
         'type': upload_original_ext,
         'state': state,  # 上传状态，成功时返回SUCCESS,其他任何值将原样返回至图片上传框中
