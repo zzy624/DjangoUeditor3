@@ -49,12 +49,12 @@ def save_upload_file(PostFile, FilePath):
     SID = ""
     SKEY = ""
     Region = ""
-    try:
-        SID = os.environ['SID']
-        SKEY = os.environ['SKEY']
-        Region = os.environ['REGION']
-    except KeyError as e:
-        print(e)
+    # try:
+    SID = os.environ['SID']
+    SKEY = os.environ['SKEY']
+    Region = os.environ['REGION']
+    # except KeyError as e:
+    #     print(e)
     config = CosConfig(Secret_id=SID,Secret_key=SKEY,Region=Region)
     client = CosS3Client(config)
 
