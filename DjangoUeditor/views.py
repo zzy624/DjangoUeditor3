@@ -68,8 +68,8 @@ def save_upload_file(PostFile, FilePath):
                 Bucket='tiny-1256181948',
                 Body=fp,
                 Key=FilePath,
-                StorageClass='STANDARD',
-                CacheControl='no-cache',
+                # StorageClass='STANDARD',
+                # CacheControl='no-cache',
                 # ContentLength=str(len(fp))
             )
     except CosServiceError as E :
