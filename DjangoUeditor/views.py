@@ -3,7 +3,7 @@
 from importlib import import_module
 from django.http import HttpResponse
 
-from .qcloud_cos import CosConfig,CosS3Client
+from .qcloud_cos import CosConfig,CosS3Client,CosServiceError
 from . import settings as USettings
 import os
 import json
@@ -46,30 +46,36 @@ def get_path_format_vars():
 #     return u"SUCCESS"
 
 def save_upload_file(PostFile, FilePath):
-    SID = ""
-    SKEY = ""
-    Region = ""
-    # try:
-    SID = os.environ['SID']
-    SKEY = os.environ['SKEY']
-    Region = os.environ['REGION']
-    # except KeyError as e:
-    #     print(e)
+    SID = os.getenv('SID')
+    SKEY = os.getenv('SKEY')
+    Region = os.getenv('REGION')
+
+    try:
+        f = open(FilePath, 'wb')
+        for chunk in PostFile.chunks():
+            f.write(chunk)
+    except Exception as E:
+        f.close()
+        return u"写入临时文件错误: {}".format(E.message)
+    f.close()
+
     config = CosConfig(Secret_id=SID,Secret_key=SKEY,Region=Region)
     client = CosS3Client(config)
 
     try :
-        with open(PostFile, 'rb') as fp:
+        with open(FilePath,'rb') as fp:
             response = client.put_object(
                 Bucket='tiny-1256181948',
                 Body=fp,
-                Key='media'+ FilePath,
+                Key=FilePath,
                 StorageClass='STANDARD',
                 CacheControl='no-cache',
+                # ContentLength=str(len(fp))
             )
-    except Exception as e :
-        print(e)
-        return u"写入文件错误: {}".format(E.message)
+    except CosServiceError as E :
+        print(E)
+        return u"写入文件错误: {}".format(E.get_digest_msg())
+    os.remove(FilePath)
     return u"SUCCESS"
 
 @csrf_exempt
