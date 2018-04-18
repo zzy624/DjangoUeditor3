@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 import datetime
 import random
 from django.utils import six
+import time
 
 from django.utils.six.moves.urllib.request import urlopen
 from django.utils.six.moves.urllib.parse import urljoin
@@ -205,6 +206,13 @@ def UploadFile(request):
         if file is None:
             return HttpResponse(json.dumps(u"{'state:'ERROR'}"), content_type="application/javascript")
         upload_file_name = file.name
+        # 上传图片包含中文处理
+        if action == "uploadimage":
+            for i in upload_file_name:
+                if '\u4e00' <= i <= '\u9fa5':
+                    upload_file_name = 'image' + str(int(time.time())) + '.' + str(upload_file_name).split('.')[1]
+                    break
+
         upload_file_size = file.size
 
     # 取得上传的文件的原始名称
